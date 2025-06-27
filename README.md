@@ -1,6 +1,7 @@
 # Hangman Game - Local Setup Guide
 
 Follow these steps to run the project on your local machine:
+All commands are on CLI unless specified
 
 ---
 
@@ -96,7 +97,7 @@ DATABASES = {
 
 ---
 
-## Step 9: Apply Migrations and Run the Server
+## Step 9: Apply Migrations and Run the Server 
 ```bash
 python manage.py migrate
 python manage.py runserver
