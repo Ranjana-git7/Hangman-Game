@@ -99,6 +99,7 @@ def logout_api(request):
     auth_logout(request)
     return JsonResponse({'message': 'Logout successful'})
 
+
 @login_required
 def get_word_api(request):
     """Provides a random word based on the user's level."""
@@ -106,7 +107,6 @@ def get_word_api(request):
         user_profile = request.user.userprofile
         level = user_profile.level
 
-        difficulty = 'easy'
         if 1 <= level <= 7:
             difficulty = 'easy'
         elif 8 <= level <= 14:
@@ -119,20 +119,34 @@ def get_word_api(request):
         if not words_for_difficulty:
             all_words = list(Word.objects.all())
             if not all_words:
-                return JsonResponse({'error': 'No words available in the database at all.'}, status=404)
+                return JsonResponse(
+                    {'error': 'No words available in the database at all.'},
+                    status=404
+                )
             selected_word_obj = random.choice(all_words)
         else:
             selected_word_obj = random.choice(words_for_difficulty)
 
+        # Store the real word ONLY on the server
+        request.session['target_word'] = selected_word_obj.text
+
+        #  Send ONLY metadata to client
         return JsonResponse({
-            'word': selected_word_obj.text,
+            'word_length': len(selected_word_obj.text),
             'category': selected_word_obj.category
         })
 
     except AttributeError:
-        return JsonResponse({'error': 'UserProfile not found for the current user.'}, status=500)
-    except Exception as e:
-        return JsonResponse({'error': 'An unexpected error occurred while fetching a word.'}, status=500)
+        return JsonResponse(
+            {'error': 'UserProfile not found for the current user.'},
+            status=500
+        )
+    except Exception:
+        return JsonResponse(
+            {'error': 'An unexpected error occurred while fetching a word.'},
+            status=500
+        )
+
 @login_required
 @csrf_exempt
 @transaction.atomic
