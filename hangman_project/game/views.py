@@ -6,6 +6,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Word,UserProfile
@@ -33,7 +35,6 @@ def game_page_view(request):
 
 @csrf_exempt
 def signup_api(request):
-    """Handles user signup API requests."""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -48,6 +49,11 @@ def signup_api(request):
                 return JsonResponse({'error': 'Username already exists'}, status=400)
             if User.objects.filter(email=email).exists():
                 return JsonResponse({'error': 'Email already exists'}, status=400)
+
+            try:
+                validate_password(password, user=User(username=username, email=email))
+            except ValidationError as e:
+                return JsonResponse({'error': ' '.join(e.messages)}, status=400)
 
             user = User.objects.create_user(username=username, email=email, password=password)
 
