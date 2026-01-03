@@ -33,7 +33,7 @@ def game_page_view(request):
     """Serves the main game page."""
     return render(request, 'game.html')
 
-@csrf_exempt
+@login_required 
 def signup_api(request):
     if request.method == 'POST':
         try:
@@ -64,7 +64,6 @@ def signup_api(request):
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
 
-@csrf_exempt
 def login_api(request):
     """Handles user login API requests."""
     if request.method == 'POST':
@@ -139,7 +138,6 @@ def get_word_api(request):
     except Exception as e:
         return JsonResponse({'error': 'An unexpected error occurred while fetching a word.'}, status=500)
 @login_required
-@csrf_exempt
 @transaction.atomic
 def save_progress_api(request):
     """Saves the user's game progress."""
