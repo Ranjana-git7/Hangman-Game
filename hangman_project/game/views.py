@@ -114,15 +114,20 @@ def get_word_api(request):
         else:
             difficulty = 'hard'
 
-        words_for_difficulty = list(Word.objects.filter(difficulty=difficulty))
+        # Optimize: Get count of matching words instead of loading all into a list
+        count = Word.objects.filter(difficulty=difficulty).count()
 
-        if not words_for_difficulty:
-            all_words = list(Word.objects.all())
-            if not all_words:
+        if count == 0:
+            # Fallback to all words if no words match difficulty
+            count = Word.objects.all().count()
+            if count == 0:
                 return JsonResponse({'error': 'No words available in the database at all.'}, status=404)
-            selected_word_obj = random.choice(all_words)
+            
+            random_index = random.randint(0, count - 1)
+            selected_word_obj = Word.objects.all()[random_index]
         else:
-            selected_word_obj = random.choice(words_for_difficulty)
+            random_index = random.randint(0, count - 1)
+            selected_word_obj = Word.objects.filter(difficulty=difficulty)[random_index]
 
         return JsonResponse({
             'word': selected_word_obj.text,
