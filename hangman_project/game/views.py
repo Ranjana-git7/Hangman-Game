@@ -33,7 +33,7 @@ def game_page_view(request):
     """Serves the main game page."""
     return render(request, 'game.html')
 
-@csrf_exempt
+@login_required 
 def signup_api(request):
     if request.method == 'POST':
         try:
@@ -64,7 +64,6 @@ def signup_api(request):
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
 
-@csrf_exempt
 def login_api(request):
     """Handles user login API requests."""
     if request.method == 'POST':
@@ -114,18 +113,20 @@ def get_word_api(request):
         else:
             difficulty = 'hard'
 
-        words_for_difficulty = list(Word.objects.filter(difficulty=difficulty))
+        # Optimize: Get count of matching words instead of loading all into a list
+        count = Word.objects.filter(difficulty=difficulty).count()
 
-        if not words_for_difficulty:
-            all_words = list(Word.objects.all())
-            if not all_words:
-                return JsonResponse(
-                    {'error': 'No words available in the database at all.'},
-                    status=404
-                )
-            selected_word_obj = random.choice(all_words)
+        if count == 0:
+            # Fallback to all words if no words match difficulty
+            count = Word.objects.all().count()
+            if count == 0:
+                return JsonResponse({'error': 'No words available in the database at all.'}, status=404)
+            
+            random_index = random.randint(0, count - 1)
+            selected_word_obj = Word.objects.all()[random_index]
         else:
-            selected_word_obj = random.choice(words_for_difficulty)
+            random_index = random.randint(0, count - 1)
+            selected_word_obj = Word.objects.filter(difficulty=difficulty)[random_index]
 
         # Store the real word ONLY on the server
         request.session['target_word'] = selected_word_obj.text
@@ -148,7 +149,6 @@ def get_word_api(request):
         )
 
 @login_required
-@csrf_exempt
 @transaction.atomic
 def save_progress_api(request):
     """Saves the user's game progress."""
